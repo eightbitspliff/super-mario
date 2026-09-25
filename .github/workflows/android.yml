@@ -1,0 +1,46 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Tests und APK bauen
+        run: ./gradlew :core:test :app:assembleRelease --no-daemon
+
+      - name: APK umbenennen
+        run: cp app/build/outputs/apk/release/app-release.apk PixelPlumberLand.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PixelPlumberLand-apk
+          path: PixelPlumberLand.apk
+
+      - name: Release veröffentlichen
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Pixel Plumber Land v1.0.${{ github.run_number }}
+          body: |
+            APK herunterladen und auf dem Android-Gerät installieren
+            (Installation aus unbekannten Quellen erlauben).
+          files: PixelPlumberLand.apk
+          make_latest: true
